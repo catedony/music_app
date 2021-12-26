@@ -1,0 +1,90 @@
+<template>
+<main>
+<!-- Introduction -->
+  <section class="mb-8 py-20 text-white text-center relative">
+    <div class="absolute inset-0 w-full h-full bg-contain introduction-bg"
+      style="background-image: url(assets/img/header.png)"></div>
+    <div class="container mx-auto">
+      <div class="text-white main-header-content">
+        <h1 class="font-bold text-5xl mb-5">Listen to Great Music!</h1>
+        <p class="w-full md:w-8/12 mx-auto">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+          Phasellus et dolor mollis, congue augue non, venenatis elit.
+          Nunc justo eros, suscipit ac aliquet imperdiet, venenatis et
+          sapien. Duis sed magna pulvinar, fringilla lorem eget,
+          ullamcorper urna.
+        </p>
+      </div>
+    </div>
+
+    <img class="relative block mx-auto mt-5 -mb-20 w-auto max-w-full"
+      src="assets/img/introduction-music.png" />
+  </section>
+
+  <!-- Main Content -->
+  <section class="container mx-auto">
+    <div class="bg-white rounded border border-gray-200 relative flex flex-col">
+      <div class="px-6 pt-6 pb-5 font-bold border-b border-gray-200">
+        <span class="card-title">Songs</span>
+        <!-- Icon -->
+        <i class="fa fa-headphones-alt float-right text-green-400 text-xl"></i>
+      </div>
+      <!-- Playlist -->
+      <ol id="playlist">
+        <song-item v-for="song in songs" :key="song.docID" :song="song" />
+      </ol>
+      <!-- .. end Playlist -->
+    </div>
+  </section>
+  </main>
+</template>
+
+<script>
+import { getSongs, getSongByID } from '@/includes/firebase';
+import SongItem from '@/components/SongItem.vue';
+
+export default {
+  components: { SongItem },
+  name: 'Home',
+  conponents: {
+    SongItem,
+  },
+  data() {
+    return {
+      songs: [],
+      requestPending: false,
+      maxPerPage: 10,
+    };
+  },
+  created() {
+    this.getSongs();
+    window.addEventListener('scroll', this.handleScroll);
+  },
+  beforeUnmount() {
+    window.removeEventListener('scroll', this.handleScroll);
+  },
+  methods: {
+    async getSongs() {
+      let songsList;
+      if (this.songs.length) {
+        const lastLoadedSong = await getSongByID(this.songs[this.songs.length - 1].docID);
+        songsList = await getSongs(this.maxPerPage, lastLoadedSong);
+      } else {
+        songsList = await getSongs(this.maxPerPage);
+      }
+
+      songsList.forEach((song) => {
+        this.songs.push({ docID: song.id, ...song.data() });
+      });
+    },
+    handleScroll() {
+      const { scrollTop, offsetHeight } = document.documentElement;
+      const { innerHeight } = window;
+      const bottomOfWindow = Math.round(scrollTop) + innerHeight === offsetHeight;
+      if (bottomOfWindow) {
+        this.getSongs();
+      }
+    },
+  },
+};
+</script>
